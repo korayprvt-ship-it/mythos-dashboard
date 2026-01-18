@@ -89,10 +89,24 @@
             transform: scale(1.05);
         }
 
+        .setup-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         .setup-example {
             margin-top: 20px;
             font-size: 0.9rem;
             opacity: 0.7;
+        }
+
+        .setup-error {
+            background: rgba(255, 0, 0, 0.2);
+            border: 2px solid #ff6b6b;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            color: #ff6b6b;
         }
 
         /* Session Timer */
@@ -410,14 +424,16 @@
             <div class="setup-title">🏰 Kingdom Dashboard</div>
             <p style="margin-bottom: 20px;">Gib deine Server-IP und den Token ein</p>
             
-            <input type="text" id="serverIpInput" class="setup-input" placeholder="Server IP (z.B. 192.168.1.100:25580)">
+            <input type="text" id="serverIpInput" class="setup-input" placeholder="Server IP (z.B. localhost:25580)" value="localhost:25580">
             <input type="text" id="tokenInput" class="setup-input" placeholder="Token aus /myredashboard">
             
-            <button class="setup-button" onclick="connectToDashboard()">Verbinden</button>
+            <button class="setup-button" id="connectBtn" onclick="connectToDashboard()">Verbinden</button>
             
             <div class="setup-example">
-                Beispiel: Du bekommst den Link mit <strong>/myredashboard</strong> ingame
+                Tipp: Benutze ingame <strong>/myredashboard</strong> um den Token zu bekommen
             </div>
+
+            <div id="setupError" class="setup-error" style="display: none;"></div>
         </div>
     </div>
 
@@ -499,46 +515,90 @@
         let sessionToken = null;
         let sessionRemaining = 0;
         let timerInterval = null;
+        let refreshInterval = null;
 
-        function connectToDashboard() {
+        function showError(message) {
+            const errorDiv = document.getElementById('setupError');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            
+            const connectBtn = document.getElementById('connectBtn');
+            connectBtn.disabled = false;
+            connectBtn.textContent = 'Verbinden';
+        }
+
+        async function connectToDashboard() {
             const serverIp = document.getElementById('serverIpInput').value.trim();
             const token = document.getElementById('tokenInput').value.trim();
 
             if (!serverIp || !token) {
-                alert('Bitte fülle beide Felder aus!');
+                showError('❌ Bitte fülle beide Felder aus!');
                 return;
             }
+
+            // Button deaktivieren während Verbindung
+            const connectBtn = document.getElementById('connectBtn');
+            connectBtn.disabled = true;
+            connectBtn.textContent = 'Verbinde...';
+
+            // Verstecke alte Fehler
+            document.getElementById('setupError').style.display = 'none';
 
             API_URL = `http://${serverIp}/api`;
             sessionToken = token;
 
-            document.getElementById('setupScreen').style.display = 'none';
-            document.getElementById('mainContent').style.display = 'block';
-            document.getElementById('sessionTimer').style.display = 'block';
+            console.log('🔄 Versuche zu verbinden mit:', API_URL);
+            console.log('🔑 Token:', token);
 
-            validateSession();
-        }
-
-        async function validateSession() {
             try {
-                const response = await fetch(`${API_URL}/validate?token=${sessionToken}`);
+                // Teste die Verbindung zur API
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 Sekunden Timeout
+
+                const response = await fetch(`${API_URL}/validate?token=${sessionToken}`, {
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+
+                console.log('📡 Response Status:', response.status);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
                 const data = await response.json();
+                console.log('📦 Response Data:', data);
                 
                 if (!data.valid) {
-                    showError();
-                    return false;
+                    showError('❌ Token ungültig oder abgelaufen! Benutze /myredashboard im Spiel.');
+                    return;
                 }
+                
+                // Erfolg! Zeige Dashboard
+                console.log('✅ Verbindung erfolgreich!');
+                document.getElementById('setupScreen').style.display = 'none';
+                document.getElementById('mainContent').style.display = 'block';
+                document.getElementById('sessionTimer').style.display = 'block';
                 
                 sessionRemaining = data.remaining;
                 startTimer();
                 refreshAll();
-                setInterval(refreshAll, 3000);
-                return true;
+                refreshInterval = setInterval(refreshAll, 3000);
+
             } catch (error) {
-                console.error('Session validation error:', error);
-                alert('Fehler beim Verbinden! Prüfe Server IP und Token.');
-                location.reload();
-                return false;
+                console.error('❌ Verbindungsfehler:', error);
+                
+                if (error.name === 'AbortError') {
+                    showError('❌ Timeout! Server antwortet nicht. Prüfe ob der Minecraft Server läuft!');
+                } else if (error.message.includes('Failed to fetch')) {
+                    showError('❌ Kann Server nicht erreichen! Stelle sicher dass:\n' +
+                             '1. Der Minecraft Server läuft\n' +
+                             '2. Die IP korrekt ist (z.B. localhost:25580)\n' +
+                             '3. Du diese HTML-Datei LOKAL öffnest (nicht von GitHub Pages)');
+                } else {
+                    showError(`❌ Fehler: ${error.message}`);
+                }
             }
         }
 
@@ -551,7 +611,8 @@
                 
                 if (sessionRemaining <= 0) {
                     clearInterval(timerInterval);
-                    showError();
+                    if (refreshInterval) clearInterval(refreshInterval);
+                    document.getElementById('errorScreen').style.display = 'flex';
                 }
             }, 1000);
         }
@@ -569,10 +630,6 @@
             }
         }
 
-        function showError() {
-            document.getElementById('errorScreen').style.display = 'flex';
-        }
-
         async function loadStats() {
             if (!sessionToken) return;
             
@@ -581,7 +638,7 @@
                 const data = await response.json();
                 
                 if (data.error) {
-                    showError();
+                    console.error('Stats Error:', data.error);
                     return;
                 }
                 
@@ -633,7 +690,7 @@
                 const kingdoms = await response.json();
                 
                 if (kingdoms.error) {
-                    showError();
+                    console.error('Kingdoms Error:', kingdoms.error);
                     return;
                 }
                 
@@ -694,7 +751,7 @@
                 const combats = await response.json();
                 
                 if (combats.error) {
-                    showError();
+                    console.error('Combat Error:', combats.error);
                     return;
                 }
                 
@@ -733,7 +790,7 @@
                 const requests = await response.json();
                 
                 if (requests.error) {
-                    showError();
+                    console.error('Betray Error:', requests.error);
                     return;
                 }
                 
@@ -770,6 +827,20 @@
             loadCombat();
             loadBetray();
         }
+
+        // URL Parameter Support (für direkten Link)
+        window.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const urlToken = params.get('token');
+            const urlServer = params.get('server');
+            
+            if (urlToken && urlServer) {
+                document.getElementById('tokenInput').value = urlToken;
+                document.getElementById('serverIpInput').value = urlServer;
+                console.log('🔗 URL-Parameter erkannt, verbinde automatisch...');
+                setTimeout(() => connectToDashboard(), 500);
+            }
+        });
     </script>
 </body>
 </html>

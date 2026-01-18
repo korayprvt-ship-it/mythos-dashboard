@@ -17,75 +17,6 @@
 
         .container { max-width: 1600px; margin: 0 auto; }
 
-        /* Setup Screen */
-        .setup-screen {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.95);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 3000;
-        }
-
-        .setup-box {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border: 2px solid rgba(255, 215, 0, 0.5);
-            border-radius: 20px;
-            padding: 40px;
-            text-align: center;
-            max-width: 600px;
-            width: 90%;
-        }
-
-        .setup-title {
-            font-size: 2.5rem;
-            margin-bottom: 20px;
-            background: linear-gradient(45deg, #ffd700, #ffed4e);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .setup-input {
-            width: 100%;
-            padding: 15px;
-            font-size: 1.1rem;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 10px;
-            background: rgba(0, 0, 0, 0.3);
-            color: #fff;
-            margin: 15px 0;
-            text-align: center;
-        }
-
-        .setup-input::placeholder { color: rgba(255, 255, 255, 0.5); }
-
-        .setup-button {
-            background: linear-gradient(45deg, #ffd700, #ffed4e);
-            color: #000;
-            padding: 15px 40px;
-            border: none;
-            border-radius: 10px;
-            font-size: 1.2rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-
-        .setup-button:hover { transform: scale(1.05); }
-        .setup-button:disabled { opacity: 0.5; cursor: not-allowed; }
-
-        .setup-error {
-            background: rgba(255, 0, 0, 0.2);
-            border: 2px solid #ff6b6b;
-            border-radius: 10px;
-            padding: 15px;
-            margin-top: 20px;
-            color: #ff6b6b;
-        }
-
         /* Header */
         .header {
             text-align: center;
@@ -235,16 +166,8 @@
         .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(0,0,0,0.3); }
 
         /* Form */
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-        }
-
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; margin-bottom: 8px; font-weight: 600; }
         .form-input, .form-select, .form-textarea {
             width: 100%;
             padding: 12px;
@@ -254,14 +177,12 @@
             color: #fff;
             font-size: 1rem;
         }
-
         .form-textarea { min-height: 100px; resize: vertical; }
 
-        /* Toast Notification */
+        /* Toast */
         .toast {
             position: fixed;
-            bottom: 30px;
-            right: 30px;
+            bottom: 30px; right: 30px;
             background: rgba(0, 0, 0, 0.9);
             padding: 20px 30px;
             border-radius: 10px;
@@ -269,16 +190,34 @@
             z-index: 9999;
             animation: slideIn 0.3s;
         }
-
         @keyframes slideIn {
             from { transform: translateX(400px); }
             to { transform: translateX(0); }
         }
-
         .toast.success { border-left-color: #4ecdc4; }
         .toast.error { border-left-color: #ff6b6b; }
 
         .hidden { display: none !important; }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 60px;
+            font-size: 1.5rem;
+        }
+        .spinner {
+            border: 5px solid rgba(255, 255, 255, 0.1);
+            border-top: 5px solid #ffd700;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
 
         @media (max-width: 768px) {
             .grid { grid-template-columns: 1fr; }
@@ -287,19 +226,10 @@
     </style>
 </head>
 <body>
-    <!-- Setup Screen -->
-    <div class="setup-screen" id="setupScreen">
-        <div class="setup-box">
-            <div class="setup-title">🏰 Kingdom Admin Dashboard</div>
-            <p style="margin-bottom: 20px;">Verbinde dich mit deinem Server</p>
-            
-            <input type="text" id="serverIpInput" class="setup-input" placeholder="Server IP (z.B. localhost:25580)">
-            <input type="text" id="tokenInput" class="setup-input" placeholder="Token aus /myredashboard">
-            
-            <button class="setup-button" id="connectBtn" onclick="connectDashboard()">Verbinden</button>
-            
-            <div id="setupError" class="setup-error hidden"></div>
-        </div>
+    <!-- Loading Screen -->
+    <div class="loading" id="loadingScreen">
+        <div class="spinner"></div>
+        <div>Dashboard lädt...</div>
     </div>
 
     <!-- Session Timer -->
@@ -370,7 +300,6 @@
         <!-- Admin Tab -->
         <div id="adminTab" class="tab-content hidden">
             <div class="grid">
-                <!-- Broadcast -->
                 <div class="card">
                     <h3 class="card-title">📢 Broadcast</h3>
                     <div class="form-group">
@@ -380,7 +309,6 @@
                     <button class="btn btn-primary" onclick="sendBroadcast()">Senden</button>
                 </div>
 
-                <!-- Kick Player -->
                 <div class="card">
                     <h3 class="card-title">👢 Spieler Kicken</h3>
                     <div class="form-group">
@@ -394,7 +322,6 @@
                     <button class="btn btn-danger" onclick="kickPlayer()">Kicken</button>
                 </div>
 
-                <!-- Set Rank -->
                 <div class="card">
                     <h3 class="card-title">👑 Rang Setzen</h3>
                     <div class="form-group">
@@ -412,7 +339,6 @@
                     <button class="btn btn-warning" onclick="setRank()">Setzen</button>
                 </div>
 
-                <!-- Custom Command -->
                 <div class="card">
                     <h3 class="card-title">⚡ Console Command</h3>
                     <div class="form-group">
@@ -432,40 +358,46 @@
         let currentTab = 'overview';
         let refreshInterval = null;
 
-        async function connectDashboard() {
-            const serverIp = document.getElementById('serverIpInput').value.trim();
-            const token = document.getElementById('tokenInput').value.trim();
+        // ✅ Automatische Initialisierung beim Laden
+        window.addEventListener('DOMContentLoaded', async () => {
+            // Token aus URL holen
+            const params = new URLSearchParams(window.location.search);
+            sessionToken = params.get('token');
+            
+            // API URL aus der aktuellen Seiten-URL ableiten
+            API_URL = window.location.origin + '/api';
+            
+            console.log('🔄 Dashboard lädt...');
+            console.log('📡 API URL:', API_URL);
+            console.log('🔑 Token:', sessionToken ? '✅ Vorhanden' : '❌ Fehlt');
 
-            if (!serverIp || !token) {
-                showError('Bitte beide Felder ausfüllen!');
+            if (!sessionToken) {
+                document.getElementById('loadingScreen').innerHTML = `
+                    <div style="background:rgba(255,0,0,0.2);padding:40px;border-radius:20px;border:2px solid #ff6b6b;">
+                        <div style="font-size:3rem;margin-bottom:20px;">⚠️</div>
+                        <div style="font-size:1.5rem;margin-bottom:10px;">Kein Token gefunden!</div>
+                        <div style="opacity:0.8;">Bitte benutze <strong>/myredashboard</strong> im Spiel um einen Link zu erhalten.</div>
+                    </div>
+                `;
                 return;
             }
-
-            document.getElementById('connectBtn').disabled = true;
-            document.getElementById('connectBtn').textContent = 'Verbinde...';
-            document.getElementById('setupError').classList.add('hidden');
-
-            API_URL = `http://${serverIp}/api`;
-            sessionToken = token;
 
             try {
                 const response = await fetch(`${API_URL}/validate?token=${sessionToken}`);
                 const data = await response.json();
                 
                 if (!data.valid) {
-                    showError('Token ungültig oder abgelaufen!');
-                    return;
+                    throw new Error('Token ungültig oder abgelaufen');
                 }
 
                 if (!data.isAdmin) {
-                    showError('Du hast keine Admin-Berechtigung!');
-                    return;
+                    throw new Error('Keine Admin-Berechtigung');
                 }
                 
                 sessionRemaining = data.remaining;
                 document.getElementById('playerInfo').textContent = `Angemeldet als: ${data.player}`;
                 
-                document.getElementById('setupScreen').style.display = 'none';
+                document.getElementById('loadingScreen').classList.add('hidden');
                 document.getElementById('mainContent').classList.remove('hidden');
                 document.getElementById('sessionTimer').classList.remove('hidden');
                 
@@ -473,18 +405,22 @@
                 refreshAll();
                 refreshInterval = setInterval(refreshAll, 3000);
 
-            } catch (error) {
-                showError('Verbindungsfehler! Server läuft nicht oder IP falsch.');
-            }
-        }
+                console.log('✅ Dashboard erfolgreich geladen!');
 
-        function showError(msg) {
-            const errorDiv = document.getElementById('setupError');
-            errorDiv.textContent = '❌ ' + msg;
-            errorDiv.classList.remove('hidden');
-            document.getElementById('connectBtn').disabled = false;
-            document.getElementById('connectBtn').textContent = 'Verbinden';
-        }
+            } catch (error) {
+                console.error('❌ Fehler:', error);
+                document.getElementById('loadingScreen').innerHTML = `
+                    <div style="background:rgba(255,0,0,0.2);padding:40px;border-radius:20px;border:2px solid #ff6b6b;">
+                        <div style="font-size:3rem;margin-bottom:20px;">❌</div>
+                        <div style="font-size:1.5rem;margin-bottom:10px;">Verbindungsfehler</div>
+                        <div style="opacity:0.8;">${error.message}</div>
+                        <div style="margin-top:20px;font-size:0.9rem;opacity:0.7;">
+                            Stelle sicher dass der Minecraft Server läuft und Port 25580 erreichbar ist.
+                        </div>
+                    </div>
+                `;
+            }
+        });
 
         function startTimer() {
             setInterval(() => {
@@ -496,7 +432,7 @@
                 
                 if (sessionRemaining <= 0) {
                     clearInterval(refreshInterval);
-                    alert('Session abgelaufen! Bitte neu einloggen.');
+                    alert('Session abgelaufen! Bitte neu einloggen mit /myredashboard');
                     location.reload();
                 }
             }, 1000);
@@ -509,12 +445,14 @@
             
             event.target.classList.add('active');
             document.getElementById(tab + 'Tab').classList.remove('hidden');
+            
+            if (tab === 'players') loadPlayers();
+            if (tab === 'kingdoms') loadKingdoms();
         }
 
         async function refreshAll() {
             await loadStats();
             await loadCombat();
-            
             if (currentTab === 'players') await loadPlayers();
             if (currentTab === 'kingdoms') await loadKingdoms();
         }
@@ -524,12 +462,11 @@
                 const response = await fetch(`${API_URL}/stats?token=${sessionToken}`);
                 const data = await response.json();
                 
-                let totalKings = 0, totalGenerals = 0, totalPlayers = 0;
+                let totalKings = 0, totalGenerals = 0;
                 for (let i = 1; i <= 6; i++) {
                     const k = data.kingdoms[`kingdom_${i}`];
                     totalKings += k.kings;
                     totalGenerals += k.generals;
-                    totalPlayers += k.total;
                 }
                 
                 document.getElementById('onlinePlayers').textContent = data.onlinePlayers;
@@ -572,13 +509,11 @@
                 list.innerHTML = data.map(p => `
                     <div class="player-item">
                         <div class="player-info">
-                            <span class="rank-badge rank-${p.rank}">${p.rank === 'king' ? '👑 König' : p.rank === 'general' ? '⚔️ General' : '🛡️ Normal'}</span>
+                            <span class="rank-badge rank-${p.rank}">${p.rank === 'king' ? '👑' : p.rank === 'general' ? '⚔️' : '🛡️'}</span>
                             <strong>${p.name}</strong>
                             <span style="opacity:0.7;">Kingdom ${p.kingdom || '?'}</span>
                         </div>
-                        <div>
-                            <button class="btn btn-danger" onclick="kickPlayer('${p.name}')">Kick</button>
-                        </div>
+                        <button class="btn btn-danger" onclick="kickPlayerDirect('${p.name}')">Kick</button>
                     </div>
                 `).join('');
             } catch (error) {
@@ -594,8 +529,8 @@
                 const grid = document.getElementById('kingdomsGrid');
                 grid.innerHTML = data.map(k => `
                     <div class="card">
-                        <h3 class="card-title">Kingdom ${k.id} (${k.players.length} Spieler)</h3>
-                        ${k.players.length === 0 ? '<p style="opacity:0.6;">Keine Spieler online</p>' : 
+                        <h3 class="card-title">Kingdom ${k.id} (${k.players.length})</h3>
+                        ${k.players.length === 0 ? '<p style="opacity:0.6;">Keine Spieler</p>' : 
                           k.players.map(p => `
                             <div class="player-item">
                                 <div class="player-info">
@@ -629,19 +564,23 @@
                     showToast('✅ Broadcast gesendet!', 'success');
                     document.getElementById('broadcastMsg').value = '';
                 } else {
-                    showToast('❌ Fehler: ' + data.error, 'error');
+                    showToast('❌ ' + data.error, 'error');
                 }
             } catch (error) {
                 showToast('❌ Verbindungsfehler', 'error');
             }
         }
 
+        async function kickPlayerDirect(playerName) {
+            if (!confirm(`${playerName} kicken?`)) return;
+            await kickPlayer(playerName);
+        }
+
         async function kickPlayer(playerName) {
             if (!playerName) playerName = document.getElementById('kickPlayer').value;
-            const reason = document.getElementById('kickReason').value || 'Dashboard Kick';
+            const reason = document.getElementById('kickReason')?.value || 'Dashboard Kick';
             
             if (!playerName) return alert('Spielername eingeben!');
-            if (!confirm(`${playerName} kicken?`)) return;
             
             try {
                 const response = await fetch(`${API_URL}/admin/kick?token=${sessionToken}`, {
@@ -653,9 +592,10 @@
                 
                 if (data.success) {
                     showToast('✅ Spieler gekickt!', 'success');
-                    document.getElementById('kickPlayer').value = '';
+                    if (document.getElementById('kickPlayer')) document.getElementById('kickPlayer').value = '';
+                    loadPlayers();
                 } else {
-                    showToast('❌ Fehler: ' + data.error, 'error');
+                    showToast('❌ ' + data.error, 'error');
                 }
             } catch (error) {
                 showToast('❌ Verbindungsfehler', 'error');
@@ -681,7 +621,7 @@
                     showToast('✅ Rang geändert!', 'success');
                     document.getElementById('rankPlayer').value = '';
                 } else {
-                    showToast('❌ Fehler: ' + data.error, 'error');
+                    showToast('❌ ' + data.error, 'error');
                 }
             } catch (error) {
                 showToast('❌ Verbindungsfehler', 'error');
@@ -705,7 +645,7 @@
                     showToast('✅ Command ausgeführt!', 'success');
                     document.getElementById('customCmd').value = '';
                 } else {
-                    showToast('❌ Fehler: ' + data.error, 'error');
+                    showToast('❌ ' + data.error, 'error');
                 }
             } catch (error) {
                 showToast('❌ Verbindungsfehler', 'error');
@@ -717,22 +657,8 @@
             toast.className = `toast ${type}`;
             toast.textContent = message;
             document.body.appendChild(toast);
-            
             setTimeout(() => toast.remove(), 3000);
         }
-
-        // URL Parameter Support
-        window.addEventListener('DOMContentLoaded', () => {
-            const params = new URLSearchParams(window.location.search);
-            const token = params.get('token');
-            const server = params.get('server');
-            
-            if (token && server) {
-                document.getElementById('tokenInput').value = token;
-                document.getElementById('serverIpInput').value = server;
-                setTimeout(() => connectDashboard(), 500);
-            }
-        });
     </script>
 </body>
 </html>

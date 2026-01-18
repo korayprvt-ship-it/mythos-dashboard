@@ -24,6 +24,77 @@
             margin: 0 auto;
         }
 
+        /* Setup Screen */
+        .setup-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+        }
+
+        .setup-box {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 215, 0, 0.5);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            max-width: 600px;
+            width: 90%;
+        }
+
+        .setup-title {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #ffd700, #ffed4e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .setup-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .setup-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .setup-button {
+            background: linear-gradient(45deg, #ffd700, #ffed4e);
+            color: #000;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .setup-button:hover {
+            transform: scale(1.05);
+        }
+
+        .setup-example {
+            margin-top: 20px;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
         /* Session Timer */
         .session-timer {
             position: fixed;
@@ -115,7 +186,6 @@
             50% { opacity: 0.5; }
         }
 
-        /* Grid Layout */
         .grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -123,7 +193,6 @@
             margin-bottom: 30px;
         }
 
-        /* Cards */
         .card {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
@@ -161,7 +230,6 @@
             font-weight: 600;
         }
 
-        /* Kingdom Cards */
         .kingdom-card {
             background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05));
         }
@@ -214,7 +282,6 @@
             font-size: 1.2rem;
         }
 
-        /* Combat Section */
         .combat-item {
             background: rgba(255, 107, 107, 0.1);
             border-left: 4px solid #ff6b6b;
@@ -229,7 +296,6 @@
             color: #ff6b6b;
         }
 
-        /* Stats Grid */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -257,7 +323,6 @@
             opacity: 0.8;
         }
 
-        /* Loading Animation */
         .loading {
             text-align: center;
             padding: 40px;
@@ -279,7 +344,6 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* Error Screen */
         .error-screen {
             position: fixed;
             top: 0;
@@ -318,7 +382,6 @@
             opacity: 0.8;
         }
 
-        /* Responsive */
         @media (max-width: 768px) {
             .header h1 {
                 font-size: 2rem;
@@ -341,13 +404,28 @@
     </style>
 </head>
 <body>
-    <!-- Session Timer -->
-    <div class="session-timer" id="sessionTimer">
+    <!-- Setup Screen -->
+    <div class="setup-screen" id="setupScreen">
+        <div class="setup-box">
+            <div class="setup-title">🏰 Kingdom Dashboard</div>
+            <p style="margin-bottom: 20px;">Gib deine Server-IP und den Token ein</p>
+            
+            <input type="text" id="serverIpInput" class="setup-input" placeholder="Server IP (z.B. 192.168.1.100:25580)">
+            <input type="text" id="tokenInput" class="setup-input" placeholder="Token aus /myredashboard">
+            
+            <button class="setup-button" onclick="connectToDashboard()">Verbinden</button>
+            
+            <div class="setup-example">
+                Beispiel: Du bekommst den Link mit <strong>/myredashboard</strong> ingame
+            </div>
+        </div>
+    </div>
+
+    <div class="session-timer" id="sessionTimer" style="display: none;">
         <div class="timer-label">⏰ Session läuft ab in:</div>
         <div class="timer-countdown" id="countdown">--:--</div>
     </div>
 
-    <!-- Error Screen (hidden by default) -->
     <div class="error-screen" id="errorScreen" style="display: none;">
         <div class="error-box">
             <div class="error-icon">⚠️</div>
@@ -359,8 +437,7 @@
         </div>
     </div>
 
-    <div class="container">
-        <!-- Header -->
+    <div class="container" id="mainContent" style="display: none;">
         <div class="header">
             <h1>⚔️ KINGDOM DASHBOARD ⚔️</h1>
             <div class="status">
@@ -377,7 +454,6 @@
             </div>
         </div>
 
-        <!-- Stats Overview -->
         <div class="card">
             <div class="card-header">
                 <h2 class="card-title">📊 Statistiken</h2>
@@ -390,7 +466,6 @@
             </div>
         </div>
 
-        <!-- Kingdoms Grid -->
         <div class="grid" id="kingdomsGrid">
             <div class="loading">
                 <div class="spinner"></div>
@@ -398,7 +473,6 @@
             </div>
         </div>
 
-        <!-- Combat Log -->
         <div class="card">
             <div class="card-header">
                 <h2 class="card-title">⚔️ Aktive Kämpfe</h2>
@@ -409,7 +483,6 @@
             </div>
         </div>
 
-        <!-- Betray Requests -->
         <div class="card">
             <div class="card-header">
                 <h2 class="card-title">🔄 Betray Anfragen</h2>
@@ -422,26 +495,31 @@
     </div>
 
     <script>
-        const API_URL = 'http://localhost:25580/api';
+        let API_URL = '';
         let sessionToken = null;
         let sessionRemaining = 0;
         let timerInterval = null;
 
-        // Token aus URL holen
-        function getTokenFromURL() {
-            const params = new URLSearchParams(window.location.search);
-            return params.get('token');
-        }
+        function connectToDashboard() {
+            const serverIp = document.getElementById('serverIpInput').value.trim();
+            const token = document.getElementById('tokenInput').value.trim();
 
-        // Session validieren
-        async function validateSession() {
-            sessionToken = getTokenFromURL();
-            
-            if (!sessionToken) {
-                showError();
-                return false;
+            if (!serverIp || !token) {
+                alert('Bitte fülle beide Felder aus!');
+                return;
             }
 
+            API_URL = `http://${serverIp}/api`;
+            sessionToken = token;
+
+            document.getElementById('setupScreen').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+            document.getElementById('sessionTimer').style.display = 'block';
+
+            validateSession();
+        }
+
+        async function validateSession() {
             try {
                 const response = await fetch(`${API_URL}/validate?token=${sessionToken}`);
                 const data = await response.json();
@@ -453,15 +531,17 @@
                 
                 sessionRemaining = data.remaining;
                 startTimer();
+                refreshAll();
+                setInterval(refreshAll, 3000);
                 return true;
             } catch (error) {
                 console.error('Session validation error:', error);
-                showError();
+                alert('Fehler beim Verbinden! Prüfe Server IP und Token.');
+                location.reload();
                 return false;
             }
         }
 
-        // Timer starten
         function startTimer() {
             updateTimerDisplay();
             
@@ -476,7 +556,6 @@
             }, 1000);
         }
 
-        // Timer anzeigen
         function updateTimerDisplay() {
             const minutes = Math.floor(sessionRemaining / 60);
             const seconds = sessionRemaining % 60;
@@ -490,12 +569,10 @@
             }
         }
 
-        // Error Screen anzeigen
         function showError() {
             document.getElementById('errorScreen').style.display = 'flex';
         }
 
-        // Daten laden
         async function loadStats() {
             if (!sessionToken) return;
             
@@ -693,17 +770,6 @@
             loadCombat();
             loadBetray();
         }
-
-        // Start
-        async function init() {
-            const valid = await validateSession();
-            if (valid) {
-                refreshAll();
-                setInterval(refreshAll, 3000);
-            }
-        }
-
-        init();
     </script>
 </body>
 </html>

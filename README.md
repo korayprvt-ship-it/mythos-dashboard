@@ -1,1 +1,1 @@
-# mythos-dashboard
+# kingdom-dashboard

@@ -17,7 +17,6 @@
 
         .container { max-width: 1600px; margin: 0 auto; }
 
-        /* Header */
         .header {
             text-align: center;
             padding: 30px;
@@ -32,6 +31,7 @@
             background: linear-gradient(45deg, #ffd700, #ffed4e);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .admin-badge {
@@ -43,7 +43,6 @@
             margin-top: 10px;
         }
 
-        /* Session Timer */
         .session-timer {
             position: fixed;
             top: 20px; right: 20px;
@@ -60,7 +59,6 @@
             color: #ff6b6b;
         }
 
-        /* Tabs */
         .tabs {
             display: flex;
             gap: 10px;
@@ -84,7 +82,6 @@
             font-weight: 700;
         }
 
-        /* Cards */
         .card {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
@@ -100,14 +97,12 @@
             border-bottom: 2px solid rgba(255, 255, 255, 0.2);
         }
 
-        /* Grid */
         .grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
         }
 
-        /* Stat Box */
         .stat-box {
             background: rgba(255, 255, 255, 0.1);
             padding: 25px;
@@ -121,11 +116,11 @@
             background: linear-gradient(45deg, #ffd700, #ffed4e);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .stat-label { margin-top: 10px; opacity: 0.8; }
 
-        /* Player List */
         .player-item {
             background: rgba(255, 255, 255, 0.05);
             padding: 15px;
@@ -149,7 +144,6 @@
         .rank-general { background: linear-gradient(45deg, #4ecdc4, #44a3a0); }
         .rank-normal { background: rgba(255, 255, 255, 0.2); }
 
-        /* Buttons */
         .btn {
             padding: 10px 20px;
             border: none;
@@ -165,7 +159,6 @@
         .btn-warning { background: linear-gradient(45deg, #ffd93d, #ffaa00); color: #000; }
         .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(0,0,0,0.3); }
 
-        /* Form */
         .form-group { margin-bottom: 20px; }
         .form-label { display: block; margin-bottom: 8px; font-weight: 600; }
         .form-input, .form-select, .form-textarea {
@@ -179,7 +172,6 @@
         }
         .form-textarea { min-height: 100px; resize: vertical; }
 
-        /* Toast */
         .toast {
             position: fixed;
             bottom: 30px; right: 30px;
@@ -199,7 +191,6 @@
 
         .hidden { display: none !important; }
 
-        /* Loading */
         .loading {
             text-align: center;
             padding: 60px;
@@ -226,19 +217,16 @@
     </style>
 </head>
 <body>
-    <!-- Loading Screen -->
     <div class="loading" id="loadingScreen">
         <div class="spinner"></div>
         <div>Dashboard lädt...</div>
     </div>
 
-    <!-- Session Timer -->
     <div class="session-timer hidden" id="sessionTimer">
         <div style="font-size: 0.9rem; opacity: 0.8;">⏰ Session</div>
         <div class="timer-countdown" id="countdown">--:--</div>
     </div>
 
-    <!-- Main Dashboard -->
     <div class="container hidden" id="mainContent">
         <div class="header">
             <h1>⚔️ KINGDOM ADMIN DASHBOARD ⚔️</h1>
@@ -246,7 +234,6 @@
             <div style="margin-top: 15px; opacity: 0.8;" id="playerInfo">Angemeldet als: ...</div>
         </div>
 
-        <!-- Tabs -->
         <div class="tabs">
             <div class="tab active" onclick="switchTab('overview')">📊 Übersicht</div>
             <div class="tab" onclick="switchTab('players')">👥 Spieler</div>
@@ -254,7 +241,6 @@
             <div class="tab" onclick="switchTab('admin')">⚙️ Administration</div>
         </div>
 
-        <!-- Overview Tab -->
         <div id="overviewTab" class="tab-content">
             <div class="card">
                 <h2 class="card-title">📊 Server Statistiken</h2>
@@ -284,7 +270,6 @@
             </div>
         </div>
 
-        <!-- Players Tab -->
         <div id="playersTab" class="tab-content hidden">
             <div class="card">
                 <h2 class="card-title">👥 Online Spieler</h2>
@@ -292,12 +277,10 @@
             </div>
         </div>
 
-        <!-- Kingdoms Tab -->
         <div id="kingdomsTab" class="tab-content hidden">
             <div id="kingdomsGrid"></div>
         </div>
 
-        <!-- Admin Tab -->
         <div id="adminTab" class="tab-content hidden">
             <div class="grid">
                 <div class="card">
@@ -358,13 +341,11 @@
         let currentTab = 'overview';
         let refreshInterval = null;
 
-        // ✅ Automatische Initialisierung beim Laden
         window.addEventListener('DOMContentLoaded', async () => {
-            // Token aus URL holen
             const params = new URLSearchParams(window.location.search);
             sessionToken = params.get('token');
             
-            // API URL aus der aktuellen Seiten-URL ableiten
+            // API URL = gleiche Adresse wie Dashboard
             API_URL = window.location.origin + '/api';
             
             console.log('🔄 Dashboard lädt...');
@@ -384,6 +365,11 @@
 
             try {
                 const response = await fetch(`${API_URL}/validate?token=${sessionToken}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
                 const data = await response.json();
                 
                 if (!data.valid) {
@@ -409,14 +395,38 @@
 
             } catch (error) {
                 console.error('❌ Fehler:', error);
+                let errorMsg = error.message;
+                let helpText = '';
+                
+                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                    helpText = `
+                        <div style="margin-top:20px;font-size:0.9rem;opacity:0.7;text-align:left;">
+                            <strong>Mögliche Ursachen:</strong><br>
+                            • Minecraft-Server läuft nicht<br>
+                            • Port 25580 ist blockiert (Firewall!)<br>
+                            • Falsche IP-Adresse in der URL<br>
+                            • Plugin nicht geladen (/plugins prüfen)<br><br>
+                            
+                            <strong>Firewall öffnen (Windows):</strong><br>
+                            1. Windows-Taste → "Firewall" suchen<br>
+                            2. "Eingehende Regeln" → "Neue Regel"<br>
+                            3. Port TCP 25580 freigeben<br><br>
+                            
+                            <strong>Server-IP finden:</strong><br>
+                            • Gleicher PC: localhost<br>
+                            • Anderes Gerät: ipconfig in CMD<br>
+                        </div>
+                    `;
+                } else if (error.message.includes('HTTP 403') || error.message.includes('HTTP 401')) {
+                    helpText = '<br><br>Dein Token ist möglicherweise abgelaufen.<br>Benutze /myredashboard erneut.';
+                }
+                
                 document.getElementById('loadingScreen').innerHTML = `
-                    <div style="background:rgba(255,0,0,0.2);padding:40px;border-radius:20px;border:2px solid #ff6b6b;">
+                    <div style="background:rgba(255,0,0,0.2);padding:40px;border-radius:20px;border:2px solid #ff6b6b;max-width:600px;margin:0 auto;">
                         <div style="font-size:3rem;margin-bottom:20px;">❌</div>
                         <div style="font-size:1.5rem;margin-bottom:10px;">Verbindungsfehler</div>
-                        <div style="opacity:0.8;">${error.message}</div>
-                        <div style="margin-top:20px;font-size:0.9rem;opacity:0.7;">
-                            Stelle sicher dass der Minecraft Server läuft und Port 25580 erreichbar ist.
-                        </div>
+                        <div style="opacity:0.8;margin-bottom:10px;">${errorMsg}</div>
+                        ${helpText}
                     </div>
                 `;
             }

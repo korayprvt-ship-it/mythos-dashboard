@@ -219,12 +219,12 @@
 <body>
     <div class="loading" id="loadingScreen">
         <div class="spinner"></div>
-        <div>Dashboard lädt...</div>
+        <div>Verbindung wird hergestellt...</div>
     </div>
 
     <div class="session-timer hidden" id="sessionTimer">
         <div style="font-size: 0.9rem; opacity: 0.8;">⏰ Session</div>
-        <div class="timer-countdown" id="countdown">--:--</div>
+        <div class="timer-countdown" id="countdown">10:00</div>
     </div>
 
     <div class="container hidden" id="mainContent">
@@ -244,7 +244,7 @@
         <div id="overviewTab" class="tab-content">
             <div class="card">
                 <h2 class="card-title">📊 Server Statistiken</h2>
-                <div class="grid" id="statsGrid">
+                <div class="grid">
                     <div class="stat-box">
                         <div class="stat-number" id="onlinePlayers">0</div>
                         <div class="stat-label">Online Spieler</div>
@@ -335,50 +335,34 @@
     </div>
 
     <script>
-        let API_URL = '';
-        let sessionToken = null;
-        let sessionRemaining = 0;
+        let serverIP = '';
+        let sessionToken = '';
+        let sessionRemaining = 600;
         let currentTab = 'overview';
         let refreshInterval = null;
 
         window.addEventListener('DOMContentLoaded', async () => {
             const params = new URLSearchParams(window.location.search);
+            serverIP = params.get('server');
             sessionToken = params.get('token');
             
-            // API URL = gleiche Adresse wie Dashboard
-            API_URL = window.location.origin + '/api';
-            
-            console.log('🔄 Dashboard lädt...');
-            console.log('📡 API URL:', API_URL);
-            console.log('🔑 Token:', sessionToken ? '✅ Vorhanden' : '❌ Fehlt');
-
-            if (!sessionToken) {
+            if (!serverIP || !sessionToken) {
                 document.getElementById('loadingScreen').innerHTML = `
                     <div style="background:rgba(255,0,0,0.2);padding:40px;border-radius:20px;border:2px solid #ff6b6b;">
                         <div style="font-size:3rem;margin-bottom:20px;">⚠️</div>
-                        <div style="font-size:1.5rem;margin-bottom:10px;">Kein Token gefunden!</div>
-                        <div style="opacity:0.8;">Bitte benutze <strong>/myredashboard</strong> im Spiel um einen Link zu erhalten.</div>
+                        <div style="font-size:1.5rem;margin-bottom:10px;">Ungültiger Link!</div>
+                        <div style="opacity:0.8;">Benutze /myredashboard im Spiel um einen neuen Link zu generieren.</div>
                     </div>
                 `;
                 return;
             }
 
             try {
-                const response = await fetch(`${API_URL}/validate?token=${sessionToken}`);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                
+                const response = await fetch(`http://${serverIP}/api/validate?token=${sessionToken}`);
                 const data = await response.json();
                 
-                if (!data.valid) {
-                    throw new Error('Token ungültig oder abgelaufen');
-                }
-
-                if (!data.isAdmin) {
-                    throw new Error('Keine Admin-Berechtigung');
-                }
+                if (!data.valid) throw new Error('Token ungültig');
+                if (!data.isAdmin) throw new Error('Keine Admin-Rechte');
                 
                 sessionRemaining = data.remaining;
                 document.getElementById('playerInfo').textContent = `Angemeldet als: ${data.player}`;
@@ -391,42 +375,18 @@
                 refreshAll();
                 refreshInterval = setInterval(refreshAll, 3000);
 
-                console.log('✅ Dashboard erfolgreich geladen!');
-
             } catch (error) {
-                console.error('❌ Fehler:', error);
-                let errorMsg = error.message;
-                let helpText = '';
-                
-                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-                    helpText = `
-                        <div style="margin-top:20px;font-size:0.9rem;opacity:0.7;text-align:left;">
-                            <strong>Mögliche Ursachen:</strong><br>
-                            • Minecraft-Server läuft nicht<br>
-                            • Port 25580 ist blockiert (Firewall!)<br>
-                            • Falsche IP-Adresse in der URL<br>
-                            • Plugin nicht geladen (/plugins prüfen)<br><br>
-                            
-                            <strong>Firewall öffnen (Windows):</strong><br>
-                            1. Windows-Taste → "Firewall" suchen<br>
-                            2. "Eingehende Regeln" → "Neue Regel"<br>
-                            3. Port TCP 25580 freigeben<br><br>
-                            
-                            <strong>Server-IP finden:</strong><br>
-                            • Gleicher PC: localhost<br>
-                            • Anderes Gerät: ipconfig in CMD<br>
-                        </div>
-                    `;
-                } else if (error.message.includes('HTTP 403') || error.message.includes('HTTP 401')) {
-                    helpText = '<br><br>Dein Token ist möglicherweise abgelaufen.<br>Benutze /myredashboard erneut.';
-                }
-                
                 document.getElementById('loadingScreen').innerHTML = `
                     <div style="background:rgba(255,0,0,0.2);padding:40px;border-radius:20px;border:2px solid #ff6b6b;max-width:600px;margin:0 auto;">
                         <div style="font-size:3rem;margin-bottom:20px;">❌</div>
                         <div style="font-size:1.5rem;margin-bottom:10px;">Verbindungsfehler</div>
-                        <div style="opacity:0.8;margin-bottom:10px;">${errorMsg}</div>
-                        ${helpText}
+                        <div style="opacity:0.8;margin-bottom:20px;">${error.message}</div>
+                        <div style="font-size:0.9rem;opacity:0.7;">
+                            <strong>Mögliche Probleme:</strong><br>
+                            • Server ist offline<br>
+                            • Port 25580 blockiert (Firewall)<br>
+                            • Token abgelaufen (max. 10 Min)<br>
+                        </div>
                     </div>
                 `;
             }
@@ -442,7 +402,7 @@
                 
                 if (sessionRemaining <= 0) {
                     clearInterval(refreshInterval);
-                    alert('Session abgelaufen! Bitte neu einloggen mit /myredashboard');
+                    alert('Session abgelaufen!');
                     location.reload();
                 }
             }, 1000);
@@ -469,7 +429,7 @@
 
         async function loadStats() {
             try {
-                const response = await fetch(`${API_URL}/stats?token=${sessionToken}`);
+                const response = await fetch(`http://${serverIP}/api/stats?token=${sessionToken}`);
                 const data = await response.json();
                 
                 let totalKings = 0, totalGenerals = 0;
@@ -482,14 +442,12 @@
                 document.getElementById('onlinePlayers').textContent = data.onlinePlayers;
                 document.getElementById('totalKings').textContent = totalKings;
                 document.getElementById('totalGenerals').textContent = totalGenerals;
-            } catch (error) {
-                console.error('Stats Error:', error);
-            }
+            } catch (e) {}
         }
 
         async function loadCombat() {
             try {
-                const response = await fetch(`${API_URL}/combat?token=${sessionToken}`);
+                const response = await fetch(`http://${serverIP}/api/combat?token=${sessionToken}`);
                 const data = await response.json();
                 
                 document.getElementById('activeCombats').textContent = data.length;
@@ -505,18 +463,15 @@
                         </div>
                     `).join('');
                 }
-            } catch (error) {
-                console.error('Combat Error:', error);
-            }
+            } catch (e) {}
         }
 
         async function loadPlayers() {
             try {
-                const response = await fetch(`${API_URL}/admin/players?token=${sessionToken}`);
+                const response = await fetch(`http://${serverIP}/admin/players?token=${sessionToken}`);
                 const data = await response.json();
                 
-                const list = document.getElementById('playersList');
-                list.innerHTML = data.map(p => `
+                document.getElementById('playersList').innerHTML = data.map(p => `
                     <div class="player-item">
                         <div class="player-info">
                             <span class="rank-badge rank-${p.rank}">${p.rank === 'king' ? '👑' : p.rank === 'general' ? '⚔️' : '🛡️'}</span>
@@ -526,18 +481,15 @@
                         <button class="btn btn-danger" onclick="kickPlayerDirect('${p.name}')">Kick</button>
                     </div>
                 `).join('');
-            } catch (error) {
-                console.error('Players Error:', error);
-            }
+            } catch (e) {}
         }
 
         async function loadKingdoms() {
             try {
-                const response = await fetch(`${API_URL}/kingdoms?token=${sessionToken}`);
+                const response = await fetch(`http://${serverIP}/api/kingdoms?token=${sessionToken}`);
                 const data = await response.json();
                 
-                const grid = document.getElementById('kingdomsGrid');
-                grid.innerHTML = data.map(k => `
+                document.getElementById('kingdomsGrid').innerHTML = data.map(k => `
                     <div class="card">
                         <h3 class="card-title">Kingdom ${k.id} (${k.players.length})</h3>
                         ${k.players.length === 0 ? '<p style="opacity:0.6;">Keine Spieler</p>' : 
@@ -553,9 +505,7 @@
                         }
                     </div>
                 `).join('');
-            } catch (error) {
-                console.error('Kingdoms Error:', error);
-            }
+            } catch (e) {}
         }
 
         async function sendBroadcast() {
@@ -563,7 +513,7 @@
             if (!msg) return alert('Nachricht eingeben!');
             
             try {
-                const response = await fetch(`${API_URL}/admin/broadcast?token=${sessionToken}`, {
+                const response = await fetch(`http://${serverIP}/api/admin/broadcast?token=${sessionToken}`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                     body: `message=${encodeURIComponent(msg)}`
@@ -574,16 +524,16 @@
                     showToast('✅ Broadcast gesendet!', 'success');
                     document.getElementById('broadcastMsg').value = '';
                 } else {
-                    showToast('❌ ' + data.error, 'error');
+                    showToast('❌ Fehler', 'error');
                 }
-            } catch (error) {
+            } catch (e) {
                 showToast('❌ Verbindungsfehler', 'error');
             }
         }
 
-        async function kickPlayerDirect(playerName) {
-            if (!confirm(`${playerName} kicken?`)) return;
-            await kickPlayer(playerName);
+        async function kickPlayerDirect(name) {
+            if (!confirm(`${name} kicken?`)) return;
+            await kickPlayer(name);
         }
 
         async function kickPlayer(playerName) {
@@ -593,7 +543,7 @@
             if (!playerName) return alert('Spielername eingeben!');
             
             try {
-                const response = await fetch(`${API_URL}/admin/kick?token=${sessionToken}`, {
+                const response = await fetch(`http://${serverIP}/api/admin/kick?token=${sessionToken}`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                     body: `player=${encodeURIComponent(playerName)}&reason=${encodeURIComponent(reason)}`
@@ -605,9 +555,9 @@
                     if (document.getElementById('kickPlayer')) document.getElementById('kickPlayer').value = '';
                     loadPlayers();
                 } else {
-                    showToast('❌ ' + data.error, 'error');
+                    showToast('❌ Fehler', 'error');
                 }
-            } catch (error) {
+            } catch (e) {
                 showToast('❌ Verbindungsfehler', 'error');
             }
         }
@@ -620,7 +570,7 @@
             if (!confirm(`${player} zu ${rank} machen?`)) return;
             
             try {
-                const response = await fetch(`${API_URL}/admin/setrank?token=${sessionToken}`, {
+                const response = await fetch(`http://${serverIP}/api/admin/setrank?token=${sessionToken}`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                     body: `player=${encodeURIComponent(player)}&rank=${rank}`
@@ -631,9 +581,9 @@
                     showToast('✅ Rang geändert!', 'success');
                     document.getElementById('rankPlayer').value = '';
                 } else {
-                    showToast('❌ ' + data.error, 'error');
+                    showToast('❌ Fehler', 'error');
                 }
-            } catch (error) {
+            } catch (e) {
                 showToast('❌ Verbindungsfehler', 'error');
             }
         }
@@ -644,7 +594,7 @@
             if (!confirm(`Command ausführen: /${cmd}`)) return;
             
             try {
-                const response = await fetch(`${API_URL}/admin/command?token=${sessionToken}`, {
+                const response = await fetch(`http://${serverIP}/api/admin/command?token=${sessionToken}`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                     body: `command=${encodeURIComponent(cmd)}`
@@ -655,9 +605,9 @@
                     showToast('✅ Command ausgeführt!', 'success');
                     document.getElementById('customCmd').value = '';
                 } else {
-                    showToast('❌ ' + data.error, 'error');
+                    showToast('❌ Fehler', 'error');
                 }
-            } catch (error) {
+            } catch (e) {
                 showToast('❌ Verbindungsfehler', 'error');
             }
         }
